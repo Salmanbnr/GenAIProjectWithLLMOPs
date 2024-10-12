@@ -6,6 +6,8 @@ from langchain_community.llms import Bedrock
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 import boto3
+
+from ingestion import data_ingestion,get_vector_store
 import os
 
 bedrock = boto3.client(service_name="bedrock-runtime")
@@ -30,21 +32,7 @@ PROMPT = PromptTemplate(
     template=prompt_template, input_variables=["context", "question"]
 )
 
-def data_ingestion():
-    loader = PyPDFDirectoryLoader("./Data")
-    document = loader.load()
-    # Optimized text splitting
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    docs = text_splitter.split_documents(document)
-    return docs
 
-def get_vector_store(docs, rebuild=False):
-    if os.path.exists("faiss_index") and not rebuild:
-        return FAISS.load_local("faiss_index", bedrock_embeddings, allow_dangerous_deserialization=True)
-    else:
-        vector_store_faiss = FAISS.from_documents(docs, bedrock_embeddings)
-        vector_store_faiss.save_local("faiss_index")
-        return vector_store_faiss
 
 def get_model():
     llm = Bedrock(model_id="meta.llama3-70b-instruct-v1:0", client=bedrock)

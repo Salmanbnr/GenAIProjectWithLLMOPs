@@ -7,7 +7,7 @@ from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 import boto3
 
-from ingestion import data_ingestion,get_vector_store
+from QAsystem.ingestion import data_ingestion,get_vector_store
 import os
 
 bedrock = boto3.client(service_name="bedrock-runtime")
@@ -44,7 +44,7 @@ def get_response_llm(llm, vector_store_faiss, query):
             llm=llm,
             chain_type="stuff",
             retriever=vector_store_faiss.as_retriever(
-                search_type="mmr", search_kwargs={"k": 3, "fetch_k": 5}
+                search_type="mmr", search_kwargs={"k": 5, "fetch_k": 8}
             ),
             return_source_documents=True,
             chain_type_kwargs={"prompt": PROMPT}
@@ -57,6 +57,6 @@ def get_response_llm(llm, vector_store_faiss, query):
 if __name__ == '__main__':
     docs = data_ingestion()
     vectorstore_faiss = get_vector_store(docs)
-    query = "who created this chatbot"
+    query = "what are all courses in 8th semester"
     llm = get_model()
     print(get_response_llm(llm, vectorstore_faiss, query))

@@ -9,6 +9,8 @@ from langchain_community.embeddings import BedrockEmbeddings
 from langchain_community.vectorstores import FAISS
 from QAsystem.retreivalandgeneration import get_model, get_response_llm
 
+
+# Comment just to commit new key to ecr registry
 # Initialize FastAPI app
 app = FastAPI()
 

@@ -1,33 +1,46 @@
 import warnings
 import boto3
-import streamlit as st
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from langchain_community.embeddings import BedrockEmbeddings
 from langchain_community.vectorstores import FAISS
-
 from QAsystem.retreivalandgeneration import get_model, get_response_llm
 
+# Initialize FastAPI app
+app = FastAPI()
+
+# Set up static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Set up Bedrock embeddings
 bedrock = boto3.client(service_name="bedrock-runtime")
 bedrock_embeddings = BedrockEmbeddings(
     model_id="amazon.titan-embed-text-v2:0", client=bedrock)
 
+# Route for the index page
+@app.get("/", response_class=HTMLResponse)
+async def get_form(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-def main():
+# Route to handle form submission
+@app.post("/search")
+async def search(user_question: str = Form(...)):
+    # Load FAISS index
+    faiss_index = FAISS.load_local(
+        "faiss_index", bedrock_embeddings, allow_dangerous_deserialization=True)
 
-    st.set_page_config("Course Chatbot")
-    st.header("CS Courses ChatBot")
-    user_question = st.text_input("Ask about courses")
+    # Get the model
+    llm = get_model()
 
-    if st.button("Search"):
-        with st.spinner("Processing..."):
-            faiss_index = FAISS.load_local(
-                "faiss_index", bedrock_embeddings, allow_dangerous_deserialization=True)
+    # Get the response from LLM
+    response = get_response_llm(llm, faiss_index, user_question)
 
-            llm = get_model()
+    return JSONResponse(content={"response": response})
 
-            st.write(get_response_llm(llm, faiss_index, user_question))
-            st.success("Done")
-
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

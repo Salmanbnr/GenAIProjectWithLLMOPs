@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS Courses ChatBot</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <h1>CS Courses ChatBot</h1>
+        <form id="search-form" method="POST" action="/search">
+            <input type="text" name="user_question" placeholder="Ask about courses" required>
+            <button type="submit">Search</button>
+        </form>
+
+        <div id="loading" class="loading hidden">Processing...</div>
+
+        <!-- Display the response here -->
+        <div id="response-section" class="response-section hidden">
+            <h3>Your question:</h3>
+            <p id="user-question"></p>
+            <h3>Chatbot Response:</h3>
+            <div id="chatbot-response"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('search-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const userQuestion = formData.get('user_question');
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('response-section').classList.add('hidden');
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                document.getElementById('user-question').textContent = userQuestion;
+                document.getElementById('chatbot-response').innerHTML = marked.parse(data.response);
+                hljs.highlightAll();
+
+                document.getElementById('response-section').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
